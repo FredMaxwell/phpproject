@@ -1,77 +1,79 @@
 <?php
-    session_start();
+session_start();
 
-    function hashPassword($password, $salt) {
-        return hash('sha512', $password . $salt);
-    }
+function hashPassword($password, $salt) {
+    return hash('sha512', $password . $salt);
+}
 
 // Функция для загрузки пользователей из файла
-    function loadUsers($file) {
-        $users = [];
-        if (file_exists($file)) {
-            $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            foreach ($lines as $line) {
-                list($id, $username, $hashed_password) = explode('|', trim($line));
-                $users[$username] = [
-                    'id' => $id,
-                    'username' => $username,
-                    'hashed_password' => $hashed_password,
-                ];
-            }
+function loadUsers($file) {
+    $users = [];
+    if (file_exists($file)) {
+        $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            list($id, $username, $hashed_password) = explode('|', trim($line));
+            $users[$username] = [
+                'id' => $id,
+                'username' => $username,
+                'hashed_password' => $hashed_password,
+            ];
         }
-        return $users;
     }
+    return $users;
+}
 
 // Функция для сохранения пользователя в файл
-    function saveUser($file, $user) {
-        $line = implode('|', $user) . "\n";
-        file_put_contents($file, $line, FILE_APPEND | LOCK_EX);
-    }
+function saveUser($file, $user) {
+    $line = implode('|', $user) . "\n";
+    file_put_contents($file, $line, FILE_APPEND | LOCK_EX);
+}
 
-    $usersFile = __DIR__ . '/users.txt';
-    $salt = 'SOL';
-    $users = loadUsers($usersFile);
+$usersFile = __DIR__ . '/users.txt';
+$salt = 'SOL';
+$users = loadUsers($usersFile);
+
+$logoutMessage = '';
 
 // Регистрация
-    if (isset($_POST['register'])) {
-        $username = $_POST['username'];
-        $password = $_POST['password'];
+if (isset($_POST['register'])) {
+    $username = $_POST['username'];
+    $password = $_POST['password'];
 
-        if (array_key_exists($username, $users)) {
-            echo "Пользователь уже существует!";
-        } else {
-            $userId = count($users) + 1;
-            $hashedPassword = hashPassword($password, $salt);
-            $user = [
-                'id' => $userId,
-                'username' => $username,
-                'hashed_password' => $hashedPassword,
-            ];
-            saveUser($usersFile, $user);
-            echo "Регистрация прошла успешно!";
-        }
+    if (array_key_exists($username, $users)) {
+        echo "Пользователь уже существует!";
+    } else {
+        $userId = count($users) + 1;
+        $hashedPassword = hashPassword($password, $salt);
+        $user = [
+            'id' => $userId,
+            'username' => $username,
+            'hashed_password' => $hashedPassword,
+        ];
+        saveUser($usersFile, $user);
+        echo "Регистрация прошла успешно!";
     }
+}
 
 // Авторизация
-    if (isset($_POST['login'])) {
-        $username = $_POST['username'];
-        $password = $_POST['password'];
+if (isset($_POST['login'])) {
+    $username = $_POST['username'];
+    $password = $_POST['password'];
 
-        if (array_key_exists($username, $users) && $users[$username]['hashed_password'] === hashPassword($password, $salt)) {
-            $_SESSION['auth'] = true;
-            $_SESSION['username'] = $username;
-            echo "Авторизация успешна!";
-        } else {
-            echo "Неверное имя пользователя или пароль!";
-        }
+    if (array_key_exists($username, $users) && $users[$username]['hashed_password'] === hashPassword($password, $salt)) {
+        $_SESSION['auth'] = true;
+        $_SESSION['username'] = $username;
+        echo "Авторизация успешна!";
+    } else {
+        echo "Неверное имя пользователя или пароль!";
     }
+}
 
-    if (isset($_POST['logout'])) {
-        session_destroy();
-        echo "Вы вышли из системы!";
-    }
+if (isset($_POST['logout'])) {
+    session_destroy();
+    $logoutMessage = "Вы вышли из системы!";
+}
 
-    $auth = !empty($_SESSION) && array_key_exists('auth', $_SESSION) && (bool)$_SESSION['auth'];
+$auth = !empty($_SESSION) && array_key_exists('auth', $_SESSION) && (bool)$_SESSION['auth'];
 ?>
 
 <!DOCTYPE html>
